@@ -39,12 +39,13 @@ export default function ReservationPage() {
 
   const total = useMemo(() => selectedFormula?.price ?? 0, [selectedFormula]);
 
+  // Optional: preselect formula from query (?formula=interieur|exterieur|complete)
   useEffect(() => {
     const formulaParam = searchParams?.get("formula");
     if (!formulaParam) return;
     if (FORMULAS.some((f) => f.key === formulaParam)) {
       setBooking((prev) => ({ ...prev, formula: formulaParam as Booking["formula"] }));
-      // Ne pas modifier l'étape, laisser l'étape par défaut (1)
+      setStep(3); // jump to form to complete booking quickly
     }
   }, [searchParams]);
 
@@ -57,33 +58,34 @@ export default function ReservationPage() {
       booking.address.trim().length > 5 &&
       booking.city.trim().length > 1 &&
       booking.zip.trim().length >= 4 &&
-      booking.date !== ""
+      booking.phone.trim().length >= 8 &&
+      booking.date.trim().length > 0
     );
   }
 
   function makeWhatsAppText() {
-    const vLabel = VEHICLES.find((v) => v.key === booking.vehicle)?.label ?? "";
-    const fLabel = selectedFormula?.label ?? "";
-    const lines = [
-      "Bonjour, je souhaite réserver :",
-      `• Véhicule : ${vLabel}`,
-      `• Formule : ${fLabel} (${selectedFormula?.price}€)`,
-      "",
-      "Coordonnées :",
-      `• Nom : ${booking.lastName.toUpperCase()} ${booking.firstName}`,
-      `• Téléphone : ${booking.phone || "(non renseigné)"}`,
-      `• Adresse : ${booking.address}, ${booking.zip} ${booking.city}`,
-      `• Date souhaitée : ${booking.date} (${booking.slot})`,
-      booking.notes ? `• Notes : ${booking.notes}` : "",
-      "",
-      `Total estimé : ${total}€`,
-      "Envoyé depuis le site AutoFocus",
-    ].filter(Boolean);
-    return lines.join("\\n");
+    const vehicleLabel = VEHICLES.find(v => v.key === booking.vehicle)?.label || booking.vehicle;
+    const formulaLabel = FORMULAS.find(f => f.key === booking.formula)?.label || booking.formula;
+
+    return `🚗 *Nouvelle réservation AutoFocus*
+
+👤 *Client:* ${booking.firstName} ${booking.lastName}
+📱 *Téléphone:* ${booking.phone}
+📍 *Adresse:* ${booking.address}, ${booking.zip} ${booking.city}
+
+🚗 *Véhicule:* ${vehicleLabel}
+✨ *Formule:* ${formulaLabel}
+💰 *Prix:* ${total}€
+
+📅 *Date souhaitée:* ${booking.date}
+⏰ *Créneau:* ${booking.slot}
+
+${booking.notes ? `📝 *Notes:* ${booking.notes}` : ''}
+
+Merci ! 🙏`;
   }
 
   function handleSubmit() {
-    if (!canSubmit()) return;
     const text = makeWhatsAppText();
     const base = WA_NUMBER ? `https://wa.me/${WA_NUMBER}` : `https://wa.me/`;
     const url = `${base}?text=${encodeURIComponent(text)}`;
@@ -95,20 +97,21 @@ export default function ReservationPage() {
       <BackgroundFX />
       <PremiumNavbar />
       
-      <section className="relative z-10 pt-24 sm:pt-32 pb-12">
+      <section className="relative z-10 pt-32 pb-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6">
               Réserver une <span className="text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text">Prestation</span>
             </h1>
-            <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
               Choisissez votre véhicule, votre formule et renseignez vos coordonnées. L'envoi se fait par WhatsApp — aucune carte bancaire n'est requise.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            {/* Wizard */}
             <div className="lg:col-span-2">
-              <div className="card-premium p-4 sm:p-6 lg:p-8">
+              <div className="card-premium p-8">
                 <ProgressBar step={step} />
 
                 {step === 1 && (
@@ -125,7 +128,6 @@ export default function ReservationPage() {
                   <Step2Formula
                     booking={booking}
                     onUpdate={(updates) => setBooking(prev => ({ ...prev, ...updates }))}
-                    goToNextStep={() => setStep(3)}
                   />
                 )}
 
@@ -141,6 +143,7 @@ export default function ReservationPage() {
               </div>
             </div>
 
+            {/* Récap */}
             <aside className="lg:col-span-1">
               <div className="card-premium p-8">
                 <h3 className="text-lg font-semibold text-white mb-6">Récapitulatif</h3>

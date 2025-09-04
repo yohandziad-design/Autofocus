@@ -84,13 +84,13 @@ export default function PremiumNavbar() {
           {/* Bouton hamburger */}
           <button
             type="button"
-            className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-slate-200 hover:text-white hover:border-white/20 transition-all"
-            aria-label="Ouvrir le menu"
+            className="lg:hidden inline-flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 text-slate-200 hover:text-white hover:border-white/20 transition-all active:scale-95"
+            aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
             onClick={() => setOpen((o) => !o)}
           >
             <svg
-              width="20"
-              height="20"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -98,6 +98,7 @@ export default function PremiumNavbar() {
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
+              className={`transition-transform duration-300 ${open ? 'rotate-90' : ''}`}
             >
               {open ? (
                 <path d="M18 6L6 18M6 6l12 12" />
@@ -114,30 +115,42 @@ export default function PremiumNavbar() {
 
         {/* Menu mobile */}
         <div
-          className={`lg:hidden overflow-hidden transition-[max-height,opacity] duration-300 ${
-            open ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          className={`lg:hidden overflow-hidden transition-all duration-500 ease-out ${
+            open ? "max-h-96 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-4"
           }`}
         >
-          <div className="mt-3 glass-nav p-4">
-            <ul className="flex flex-col gap-2">
-              {navItems.map((item) => (
-                <li key={item.href}>
+          <div className="mt-3 glass-nav p-6 rounded-2xl">
+            <ul className="flex flex-col gap-1">
+              {navItems.map((item, index) => (
+                <li key={item.href} 
+                    className={`transform transition-all duration-300 delay-${index * 50} ${
+                      open ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+                    }`}>
                   <NavLink
                     href={item.href}
-                    className="block w-full rounded-xl px-4 py-3 text-slate-200 hover:text-white hover:bg-white/5"
+                    className="flex items-center w-full rounded-xl px-4 py-4 text-slate-200 hover:text-white hover:bg-white/10 transition-all text-lg"
+                    onClick={() => setOpen(false)}
                   >
+                    <span className="mr-3">
+                      {item.label === "Formules" && "💰"}
+                      {item.label === "Galerie" && "📸"}
+                      {item.label === "Réservation" && "📅"}
+                    </span>
                     {item.label}
                   </NavLink>
                 </li>
               ))}
             </ul>
-            <div className="pt-4 border-t border-white/10 mt-4">
+            <div className={`pt-6 border-t border-white/10 mt-4 transform transition-all duration-300 delay-150 ${
+              open ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}>
               <Link
                 href="/reservation"
-                className="btn-neon w-full justify-center text-sm"
-                aria-label="Réserver"
+                className="btn-neon w-full justify-center text-lg py-4"
+                aria-label="Réserver maintenant"
+                onClick={() => setOpen(false)}
               >
-                Réserver
+                🚀 Réserver maintenant
               </Link>
             </div>
           </div>
@@ -152,10 +165,12 @@ function NavLink({
   href,
   children,
   className = "",
+  onClick,
 }: {
   href: string;
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }) {
   const pathname = usePathname();
 
@@ -167,6 +182,7 @@ function NavLink({
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 transition-all duration-200
         ${isActive ? "text-white" : "text-slate-300 hover:text-white"}
         hover:bg-white/5 ${className}`}
